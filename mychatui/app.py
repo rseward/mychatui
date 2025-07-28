@@ -79,6 +79,8 @@ class App(customtkinter.CTk):
                 # Method 3: Set both class and name
                 self.tk.call('wm', 'command', self._w, 'MyChatUI')
                 logger.info("Set window class and name to 'MyChatUI'")
+                customtkinter.set_appearance_mode("Dark") 
+                
             except Exception as e:
                 logger.error(f"Failed to set window class/name: {e}")
             
