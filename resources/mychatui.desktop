@@ -1,0 +1,15 @@
+[Desktop Entry]
+Name=MyChatUI
+GenericName=AI Chat Application
+Comment=A cool Python AI Chat application
+Exec=/user/rseward/bin/mychatui
+Icon=mychatui
+Terminal=false
+Type=Application
+Categories=Utility;Development;Network;InstantMessaging;
+Keywords=chat;ai;messenger;
+StartupWMClass=MyChatUI
+StartupNotify=true
+X-GNOME-UsesNotifications=true
+X-GNOME-SingleWindow=true
+X-GNOME-FullName=MyChatUI AI Chat

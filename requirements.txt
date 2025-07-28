@@ -3,4 +3,3 @@ google-generativeai
 tkhtmlview
 markdown-it-py
 mdit-py-plugins
-beautifulsoup4

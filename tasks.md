@@ -1,5 +1,7 @@
 # Pending tasks
 
+- [ ] tkhtmlview does not allow the mouse to highlight text. Complete this feature.
+
 # Completed tasks
 - [x] Ensure the hamburger menu appears in the first row of the UI. I belive you need to define it as one of the first widgets in that row.
 - [x] Add a hamburger menu to the top left of the window

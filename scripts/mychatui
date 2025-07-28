@@ -1,0 +1,20 @@
+#!/bin/bash
+
+mkdir -p ~/logs/
+. /bluestone/src/github/mychatui/myenv
+echo "$(date): Jarvis coming online.." >> ~/logs/mychatui.log
+
+# Activate the virtual environment
+source /bluestone/src/github/mychatui/.venv/bin/activate
+
+# Run the application with full error output
+cd /home/bluestone/src/github/mychatui
+python -m mychatui.app
+
+# Keep the terminal open if there's an error
+if [ $? -ne 0 ]; then
+    echo "The application exited with an error. Press Enter to close."
+    read
+fi
+
+echo "Je Fin!"
