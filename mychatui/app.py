@@ -1,5 +1,6 @@
 import customtkinter
 from mychatui.preferences import PreferencesWindow
+from mychatui.menu import HamburgerMenu
 import json
 import os
 import google.generativeai as genai
@@ -9,6 +10,7 @@ from mdit_py_plugins.front_matter import front_matter_plugin
 from tkhtmlview import HTMLScrolledText
 import tkinter as tk
 from tkinter import filedialog
+from bs4 import BeautifulSoup
 
 class App(customtkinter.CTk):
     def __init__(self):
@@ -20,15 +22,17 @@ class App(customtkinter.CTk):
         self.load_config()
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+
+        self.menu_frame = HamburgerMenu(self, self)
+        self.menu_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
 
         self.tab_view = customtkinter.CTkTabview(self)
-        self.tab_view.grid(row=0, column=0, sticky="nsew")
+        self.tab_view.grid(row=1, column=0, sticky="nsew")
 
         self.tab_count = 0
         self.add_new_tab()
 
-        self.create_menu()
         self.bind_shortcuts()
 
     def load_config(self):
@@ -102,6 +106,8 @@ class App(customtkinter.CTk):
         if customtkinter.get_appearance_mode() == "Dark":
             textbox.configure(background="#2b2b2b")
 
+        self.create_context_menu(textbox)
+
         entry = customtkinter.CTkEntry(tab, placeholder_text="Send a message", font=font)
         entry.grid(row=1, column=0, sticky="ew", padx=(5, 0), pady=5)
         entry.bind("<Return>", lambda event: self.send_message(tab, textbox, entry))
@@ -109,14 +115,32 @@ class App(customtkinter.CTk):
         send_button = customtkinter.CTkButton(tab, text="Send", width=70, command=lambda: self.send_message(tab, textbox, entry))
         send_button.grid(row=1, column=1, sticky="e", padx=5, pady=5)
 
+    def create_context_menu(self, widget):
+        context_menu = tk.Menu(widget, tearoff=0)
+        context_menu.add_command(label="Copy", command=lambda: self.copy_selection(widget))
+        
+        widget.bind("<Button-3>", lambda event: self.show_context_menu(event, context_menu))
+        widget.bind("<Control-c>", lambda event: self.copy_selection(widget))
+
+    def show_context_menu(self, event, context_menu):
+        context_menu.tk_popup(event.x_root, event.y_root)
+
+    def copy_selection(self, widget):
+        try:
+            selected_text = widget.selection_get()
+            self.clipboard_clear()
+            self.clipboard_append(selected_text)
+        except tk.TclError:
+            pass  # No text selected
+
     def send_message(self, tab, textbox, entry):
         message = entry.get()
         if message:
             tab.chat_history.append(f"<p>🧑 You: {message}</p>")
             self.update_textbox_html(tab, textbox)
             entry.delete(0, "end")
-            self.progress_bar.pack(side="right", padx=5, pady=5)
-            self.progress_bar.start()
+            self.menu_frame.progress_bar.grid()
+            self.menu_frame.progress_bar.start()
             
             thread = threading.Thread(target=self._get_ai_response_threaded, args=(tab, textbox, message))
             thread.start()
@@ -140,44 +164,46 @@ class App(customtkinter.CTk):
             tab.chat_history.append(f"🤖 AI: {html}")
         
         self.update_textbox_html(tab, textbox)
-        self.progress_bar.stop()
-        self.progress_bar.pack_forget()
+        self.menu_frame.progress_bar.stop()
+        self.menu_frame.progress_bar.grid_remove()
 
     def update_textbox_html(self, tab, textbox):
         history_html = "".join(tab.chat_history)
-        if customtkinter.get_appearance_mode() == "Dark":
-            html_to_render = f"<div style='color: white;'>{history_html}</div>"
+        
+        soup = BeautifulSoup(history_html, 'html.parser')
+
+        base_color = "white" if customtkinter.get_appearance_mode() == "Dark" else "black"
+        
+        style_map = {
+            'b': 'color: gold; font-weight: bold;',
+            'strong': 'color: #c09900; font-weight: bold;',
+            'i': 'color: green; font-style: italic;',
+            'em': 'color: green; font-style: italic;',
+            'u': 'color: blue; text-decoration: underline;',
+            's': 'color: red; text-decoration: line-through;',
+            'strike': 'color: red; text-decoration: line-through;',
+            'code': 'color: blue; font-weight: bold;',
+        }
+
+        for tag_name, style in style_map.items():
+            for tag in soup.find_all(tag_name):
+                if tag.has_attr('style'):
+                    tag['style'] += f" {style}"
+                else:
+                    tag['style'] = style
+
+        body = soup.find('body')
+        if body:
+            body['style'] = f"color: {base_color};"
         else:
-            html_to_render = history_html
+            # If no body tag, wrap in a div
+            new_soup = BeautifulSoup(f'<div style="color: {base_color};"></div>', 'html.parser')
+            new_soup.div.append(soup)
+            soup = new_soup
+
+        html_to_render = str(soup)
         textbox.set_html(html_to_render)
         textbox.see(tk.END)
-
-    def create_menu(self):
-        menu_frame = customtkinter.CTkFrame(self)
-        menu_frame.grid(row=1, column=0, sticky="ew")
-        menu_frame.grid_columnconfigure(1, weight=1)
-
-        menu_button = customtkinter.CTkButton(menu_frame, text="☰", width=30)
-        menu_button.pack(side="left", padx=5, pady=5)
-        
-        self.menu = tk.Menu(self, tearoff=0)
-        self.menu.add_command(label="New Tab", command=self.add_new_tab)
-        self.menu.add_command(label="Rename Tab", command=self.rename_current_tab)
-        self.menu.add_command(label="Close Tab", command=self.close_current_tab)
-        self.menu.add_separator()
-        self.menu.add_command(label="Save Tab", command=self.save_current_tab)
-        self.menu.add_command(label="Open Tab", command=self.open_tab)
-        self.menu.add_separator()
-        self.menu.add_command(label="Preferences", command=self.open_preferences)
-        
-        menu_button.bind("<Button-1>", self.show_menu)
-
-        self.progress_bar = customtkinter.CTkProgressBar(menu_frame, mode="indeterminate")
-        self.progress_bar.pack(side="right", padx=5, pady=5)
-        self.progress_bar.pack_forget()
-
-    def show_menu(self, event):
-        self.menu.tk_popup(event.x_root, event.y_root)
 
     def open_preferences(self):
         preferences_window = PreferencesWindow(self)
@@ -204,7 +230,7 @@ class App(customtkinter.CTk):
         self.bind("<Control-o>", lambda event: self.open_tab())
 
     def show_menu_ctrl_m(self, event):
-        self.menu.tk_popup(self.winfo_x() + 5, self.winfo_y() + 30)
+        self.menu_frame.menu.tk_popup(self.winfo_x() + 5, self.winfo_y() + 30)
 
 def main():
     app = App()
