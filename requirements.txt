@@ -1,2 +1,5 @@
 customtkinter
 google-generativeai
+tkhtmlview
+markdown-it-py
+mdit-py-plugins

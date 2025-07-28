@@ -7,6 +7,8 @@ setup(
     install_requires=[
         "customtkinter",
         "google-generativeai",
+        "tkhtmlview",
+        "markdown",
     ],
     entry_points={
         "gui_scripts": [
