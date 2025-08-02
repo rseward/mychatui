@@ -21,9 +21,17 @@ class PreferencesWindow(customtkinter.CTkToplevel):
                 config = json.load(f)
                 if "font_size" not in config:
                     config["font_size"] = 12  # Default font size
+                if "user_models" not in config or not config.get("user_models") or not isinstance(config.get("user_models")[0], dict):
+                    config["user_models"] = [
+                        {"display_name": "Gemini 1.0 Pro", "full_name": "models/gemini-1.0-pro"},
+                        {"display_name": "Gemini 1.5 Pro", "full_name": "models/gemini-1.5-pro-latest"},
+                    ]
                 return config
         else:
-            return {"api_key": "", "model": "", "font_size": 12}
+            return {"api_key": "", "model": "", "font_size": 12, "user_models": [
+                {"display_name": "Gemini 1.0 Pro", "full_name": "models/gemini-1.0-pro"},
+                {"display_name": "Gemini 1.5 Pro", "full_name": "models/gemini-1.5-pro-latest"},
+            ]}
 
     def save_config(self):
         if not os.path.exists(os.path.dirname(self.config_file)):
@@ -41,16 +49,16 @@ class PreferencesWindow(customtkinter.CTkToplevel):
         self.model_label = customtkinter.CTkLabel(self, text="Model:")
         self.model_label.pack(pady=5)
 
-        self.models = self.get_models()
-        self.model_menu = customtkinter.CTkOptionMenu(self, values=[name for name, full_name in self.models])
+        self.models = self.config.get("user_models", [])
+        self.model_menu = customtkinter.CTkOptionMenu(self, values=[m["display_name"] for m in self.models])
         self.model_menu.pack(pady=5)
         
         # Find the display name for the currently configured model
         current_model_fullname = self.config.get("model", "")
         current_model_displayname = ""
-        for name, full_name in self.models:
-            if full_name == current_model_fullname:
-                current_model_displayname = name
+        for model in self.models:
+            if model["full_name"] == current_model_fullname:
+                current_model_displayname = model["display_name"]
                 break
         self.model_menu.set(current_model_displayname)
 
@@ -73,22 +81,13 @@ class PreferencesWindow(customtkinter.CTkToplevel):
         self.apply_button = customtkinter.CTkButton(self.button_frame, text="Apply", command=self.apply)
         self.apply_button.pack(side="left", padx=5)
 
-    def get_models(self):
-        try:
-            genai.configure(api_key=self.api_key_entry.get())
-            # Return a list of tuples (display_name, full_name)
-            return [(m.display_name, m.name) for m in genai.list_models()]
-        except Exception as e:
-            print(f"Error getting models: {e}")
-            return []
-
     def apply(self):
         self.config["api_key"] = self.api_key_entry.get()
         selected_display_name = self.model_menu.get()
         # Find the full name corresponding to the selected display name
-        for name, full_name in self.models:
-            if name == selected_display_name:
-                self.config["model"] = full_name
+        for model in self.models:
+            if model["display_name"] == selected_display_name:
+                self.config["model"] = model["full_name"]
                 break
         self.config["font_size"] = int(self.font_size_menu.get())
         self.save_config()

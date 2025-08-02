@@ -26,9 +26,55 @@ class HamburgerMenu(customtkinter.CTkFrame):
         
         menu_button.bind("<Button-1>", self.show_menu)
 
+        self.grid(row=0, column=0, sticky="ew")
+        self.grid_columnconfigure(1, weight=1)
+
+        menu_button = customtkinter.CTkButton(self, text="☰", width=30)
+        menu_button.grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        
         self.progress_bar = customtkinter.CTkProgressBar(self, mode="indeterminate")
-        self.progress_bar.grid(row=0, column=1, sticky="e", padx=5, pady=5)
+        self.progress_bar.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
         self.progress_bar.grid_remove()
+
+        self.model_menu = customtkinter.CTkOptionMenu(self, values=[], command=self.on_model_select)
+        self.model_menu.grid(row=0, column=2, sticky="e", padx=5, pady=5)
+
+        self.model_menu = customtkinter.CTkOptionMenu(self, values=[], command=self.on_model_select)
+        self.model_menu.grid(row=0, column=2, sticky="e", padx=5, pady=5)
+
+    def on_model_select(self, model_display_name):
+        # Find the full name for the selected display name
+        full_name = ""
+        for model in self.app.config.get("user_models", []):
+            if model["display_name"] == model_display_name:
+                full_name = model["full_name"]
+                break
+        
+        # Update the model for the current tab
+        current_tab = self.app.tab_view.get()
+        if current_tab:
+            tab = self.app.tab_view.tab(current_tab)
+            tab.model = full_name
+
+    def update_model_menu(self):
+        # Populate the model menu with display names
+        models = self.app.config.get("user_models", [])
+        display_names = [m["display_name"] for m in models]
+        self.model_menu.configure(values=display_names)
+        
+        # Set the current model for the active tab
+        current_tab_name = self.app.tab_view.get()
+        if current_tab_name:
+            tab = self.app.tab_view.tab(current_tab_name)
+            model_full_name = tab.model
+            
+            # Find the display name for the current model
+            display_name = ""
+            for model in models:
+                if model["full_name"] == model_full_name:
+                    display_name = model["display_name"]
+                    break
+            self.model_menu.set(display_name)
 
     def show_menu(self, event):
         self.menu.tk_popup(event.x_root, event.y_root)

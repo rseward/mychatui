@@ -1,6 +1,21 @@
 # Pending tasks
 
-- [ ] tkhtmlview does not allow the mouse to highlight text. Complete this feature.
+- [x] Create tests for the new features.
+- [x] In the ~/.config/mychatui/config.json file, the tabs config element shall be renamed to active_tabs.
+- [x] On application start up, the active_tabs config element shall be read and the tabs shall be created and restored to the state they were saved in.
+- [x] Available models will be read from the ~/.config/mychatui/config.json file the user_models element of the config.
+- [x] On the preferences dialog, the model selection drop down specifies the default model for new tabs. The model selection drop down should also specify the model for each tab. The model selection drop down should be populated with the models read from the user_models element of the config file.
+- [x] Add a tab model dropdown to the right edge of the ui row that displays the tab buttons. The model dropdown should be in the same row as the tab buttons. The model dropdown should be aligned to the right edge of the row. The selected model should apply to the current tab. Each tab can be assigned a different model. The drop down choice applies to the current tab. When a new tab is selected the drop down selection shall be changed to the tab's current model. The model name for a tab should be available to the on_send method that sends the chat to the AI.
+- [x] complete the tab save feature. There should be one tab save file per tab. The format of the save file shall be JSON.The tab save file should be named after the tab name. The tab save file should be saved in the same directory as the user's application data: ~/.config/mychatui/. The following information should be saved for each tab:
+  1. The tab name
+  2. The model name
+  3. The chat history
+- [x] complete the tab open feature. The tab open feature should load a tab save file and restore the tab to the state it was saved in.
+
+# Deferred Tasks
+
+- [x] tkhtmlview does not allow the mouse to highlight text prior to the copy action. Complete this feature.
+
 
 # Completed tasks
 - [x] Ensure the hamburger menu appears in the first row of the UI. I belive you need to define it as one of the first widgets in that row.

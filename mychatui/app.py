@@ -79,7 +79,7 @@ class App(customtkinter.CTk):
                 # Method 3: Set both class and name
                 self.tk.call('wm', 'command', self._w, 'MyChatUI')
                 logger.info("Set window class and name to 'MyChatUI'")
-                customtkinter.set_appearance_mode("Dark") 
+                customtkinter.set_appearance_mode("dark") 
                 
             except Exception as e:
                 logger.error(f"Failed to set window class/name: {e}")
@@ -140,20 +140,32 @@ class App(customtkinter.CTk):
             self.menu_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
             
             logger.info("Initializing tab view...")
-            self.tab_view = customtkinter.CTkTabview(self)
+            self.tab_view = customtkinter.CTkTabview(self, command=self.on_tab_change)
             self.tab_view.grid(row=1, column=0, sticky="nsew")
             
             self.tab_count = 0
-            logger.info("Adding initial tab...")
-            self.add_new_tab()
+            logger.info("Adding initial tabs from config...")
+            for tab_name in self.config.get("active_tabs", ["Tab 1"]):
+                self.add_new_tab(tab_name)
+
+            self.menu_frame.update_model_menu()
             
             logger.info("Setting up keyboard shortcuts...")
             self.bind_shortcuts()
+
+            self.protocol("WM_DELETE_WINDOW", self.on_closing)
             
         except Exception as e:
             logger.error(f"Error in UI initialization: {str(e)}")
             logger.error(traceback.format_exc())
             raise
+
+    def on_tab_change(self):
+        self.menu_frame.update_model_menu()
+
+    def on_closing(self):
+        self.save_config()
+        self.destroy()
 
     def load_config(self):
         logger.info("Loading configuration...")
@@ -164,8 +176,18 @@ class App(customtkinter.CTk):
                     self.config = json.load(f)
                     if "font_size" not in self.config:
                         self.config["font_size"] = 12
+                    if "active_tabs" not in self.config:
+                        self.config["active_tabs"] = ["Tab 1"]
+                    if "user_models" not in self.config or not self.config.get("user_models") or not isinstance(self.config.get("user_models")[0], dict):
+                        self.config["user_models"] = [
+                            {"display_name": "Gemini 1.0 Pro", "full_name": "models/gemini-1.0-pro"},
+                            {"display_name": "Gemini 1.5 Pro", "full_name": "models/gemini-1.5-pro-latest"},
+                        ]
             else:
-                self.config = {"api_key": "", "model": "", "font_size": 12}
+                self.config = {"api_key": "", "model": "", "font_size": 12, "active_tabs": ["Tab 1"], "user_models": [
+                    {"display_name": "Gemini 1.0 Pro", "full_name": "models/gemini-1.0-pro"},
+                    {"display_name": "Gemini 1.5 Pro", "full_name": "models/gemini-1.5-pro-latest"},
+                ]}
             
             self.font_size = self.config.get("font_size", 12)
             logger.info("Configuration loaded successfully")
@@ -174,13 +196,27 @@ class App(customtkinter.CTk):
             logger.error(traceback.format_exc())
             raise
 
-    def add_new_tab(self):
+    def save_config(self):
+        logger.info("Saving configuration...")
+        try:
+            self.config["active_tabs"] = list(self.tab_view._name_list)
+            with open(self.config_file, "w") as f:
+                json.dump(self.config, f, indent=4)
+            logger.info("Configuration saved successfully")
+        except Exception as e:
+            logger.error(f"Error saving configuration: {str(e)}")
+            logger.error(traceback.format_exc())
+            raise
+
+    def add_new_tab(self, tab_name=None):
         logger.info("Adding new tab...")
         try:
             self.tab_count += 1
-            tab_name = f"Tab {self.tab_count}"
+            if tab_name is None:
+                tab_name = f"Tab {self.tab_count}"
             self.tab_view.add(tab_name)
             tab = self.tab_view.tab(tab_name)
+            tab.model = self.config.get("model")
             self.tab_view.set(tab_name)
             self.create_chat_widgets(tab)
             logger.info("New tab added successfully")
@@ -219,15 +255,22 @@ class App(customtkinter.CTk):
         try:
             current_tab_name = self.tab_view.get()
             tab = self.tab_view.tab(current_tab_name)
-            history = tab.chat_history
             
-            file_path = filedialog.asksaveasfilename(defaultextension=".json",
-                                                     filetypes=[("JSON files", "*.json"),
-                                                                ("All files", "*.*")])
-            if file_path:
-                with open(file_path, "w") as f:
-                    json.dump(history, f, indent=4)
-                    logger.info("Tab saved successfully")
+            tab_data = {
+                "tab_name": current_tab_name,
+                "model_name": tab.model,
+                "chat_history": tab.chat_history
+            }
+            
+            config_dir = os.path.dirname(self.config_file)
+            if not os.path.exists(config_dir):
+                os.makedirs(config_dir)
+                
+            file_path = os.path.join(config_dir, f"{current_tab_name}.json")
+            
+            with open(file_path, "w") as f:
+                json.dump(tab_data, f, indent=4)
+            logger.info(f"Tab saved successfully to {file_path}")
         except Exception as e:
             logger.error(f"Error saving tab: {str(e)}")
             logger.error(traceback.format_exc())
@@ -236,18 +279,24 @@ class App(customtkinter.CTk):
     def open_tab(self):
         logger.info("Opening tab...")
         try:
-            file_path = filedialog.askopenfilename(defaultextension=".json",
+            config_dir = os.path.dirname(self.config_file)
+            file_path = filedialog.askopenfilename(initialdir=config_dir,
+                                                   defaultextension=".json",
                                                    filetypes=[("JSON files", "*.json"),
                                                               ("All files", "*.*")])
             if file_path:
                 with open(file_path, "r") as f:
-                    history = json.load(f)
+                    tab_data = json.load(f)
                 
-                self.add_new_tab()
-                current_tab_name = self.tab_view.get()
-                tab = self.tab_view.tab(current_tab_name)
-                tab.chat_history = history
+                tab_name = tab_data.get("tab_name", "New Tab")
+                self.add_new_tab(tab_name)
+                
+                tab = self.tab_view.tab(tab_name)
+                tab.model = tab_data.get("model_name")
+                tab.chat_history = tab_data.get("chat_history", [])
+                
                 self.update_textbox_html(tab, tab.winfo_children()[0])
+                self.menu_frame.update_model_menu()
                 logger.info("Tab opened successfully")
         except Exception as e:
             logger.error(f"Error opening tab: {str(e)}")
@@ -334,7 +383,8 @@ class App(customtkinter.CTk):
                 self.menu_frame.progress_bar.grid()
                 self.menu_frame.progress_bar.start()
                 
-                thread = threading.Thread(target=self._get_ai_response_threaded, args=(tab, textbox, message))
+                # TODO: send the chat history to the AI
+                thread = threading.Thread(target=self._get_ai_response_threaded, args=(tab, textbox, message, tab.model))
                 thread.start()
                 logger.info("Message sent successfully")
         except Exception as e:
@@ -342,11 +392,11 @@ class App(customtkinter.CTk):
             logger.error(traceback.format_exc())
             raise
 
-    def _get_ai_response_threaded(self, tab, textbox, message):
+    def _get_ai_response_threaded(self, tab, textbox, message, model):
         logger.info("Getting AI response...")
         try:
             genai.configure(api_key=self.config.get("api_key"))
-            model = genai.GenerativeModel(self.config.get("model"))
+            model = genai.GenerativeModel(model)
             response = model.generate_content(message)
             self.after(0, self.get_ai_response, tab, textbox, response.text, None)
             logger.info("AI response received successfully")
