@@ -1,7 +1,7 @@
 import customtkinter
 import json
 import os
-import google.generativeai as genai
+
 
 class PreferencesWindow(customtkinter.CTkToplevel):
     def __init__(self, master):
@@ -21,17 +21,38 @@ class PreferencesWindow(customtkinter.CTkToplevel):
                 config = json.load(f)
                 if "font_size" not in config:
                     config["font_size"] = 12  # Default font size
-                if "user_models" not in config or not config.get("user_models") or not isinstance(config.get("user_models")[0], dict):
+                if (
+                    "user_models" not in config
+                    or not config.get("user_models")
+                    or not isinstance(config.get("user_models")[0], dict)
+                ):
                     config["user_models"] = [
-                        {"display_name": "Gemini 1.0 Pro", "full_name": "models/gemini-1.0-pro"},
-                        {"display_name": "Gemini 1.5 Pro", "full_name": "models/gemini-1.5-pro-latest"},
+                        {
+                            "display_name": "Gemini 1.0 Pro",
+                            "full_name": "models/gemini-1.0-pro",
+                        },
+                        {
+                            "display_name": "Gemini 1.5 Pro",
+                            "full_name": "models/gemini-1.5-pro-latest",
+                        },
                     ]
                 return config
         else:
-            return {"api_key": "", "model": "", "font_size": 12, "user_models": [
-                {"display_name": "Gemini 1.0 Pro", "full_name": "models/gemini-1.0-pro"},
-                {"display_name": "Gemini 1.5 Pro", "full_name": "models/gemini-1.5-pro-latest"},
-            ]}
+            return {
+                "api_key": "",
+                "model": "",
+                "font_size": 12,
+                "user_models": [
+                    {
+                        "display_name": "Gemini 1.0 Pro",
+                        "full_name": "models/gemini-1.0-pro",
+                    },
+                    {
+                        "display_name": "Gemini 1.5 Pro",
+                        "full_name": "models/gemini-1.5-pro-latest",
+                    },
+                ],
+            }
 
     def save_config(self):
         if not os.path.exists(os.path.dirname(self.config_file)):
@@ -50,9 +71,11 @@ class PreferencesWindow(customtkinter.CTkToplevel):
         self.model_label.pack(pady=5)
 
         self.models = self.config.get("user_models", [])
-        self.model_menu = customtkinter.CTkOptionMenu(self, values=[m["display_name"] for m in self.models])
+        self.model_menu = customtkinter.CTkOptionMenu(
+            self, values=[m["display_name"] for m in self.models]
+        )
         self.model_menu.pack(pady=5)
-        
+
         # Find the display name for the currently configured model
         current_model_fullname = self.config.get("model", "")
         current_model_displayname = ""
@@ -64,21 +87,28 @@ class PreferencesWindow(customtkinter.CTkToplevel):
 
         self.font_size_label = customtkinter.CTkLabel(self, text="Font Size:")
         self.font_size_label.pack(pady=5)
-        self.font_size_menu = customtkinter.CTkOptionMenu(self, values=[str(s) for s in [10, 12, 14, 16, 18, 20]])
+        self.font_size_menu = customtkinter.CTkOptionMenu(
+            self, values=[str(s) for s in [10, 12, 14, 16, 18, 20]]
+        )
         self.font_size_menu.pack(pady=5)
         self.font_size_menu.set(str(self.config.get("font_size", 12)))
-
 
         self.button_frame = customtkinter.CTkFrame(self)
         self.button_frame.pack(pady=10)
 
-        self.ok_button = customtkinter.CTkButton(self.button_frame, text="OK", command=self.ok)
+        self.ok_button = customtkinter.CTkButton(
+            self.button_frame, text="OK", command=self.ok
+        )
         self.ok_button.pack(side="left", padx=5)
 
-        self.cancel_button = customtkinter.CTkButton(self.button_frame, text="Cancel", command=self.cancel)
+        self.cancel_button = customtkinter.CTkButton(
+            self.button_frame, text="Cancel", command=self.cancel
+        )
         self.cancel_button.pack(side="left", padx=5)
 
-        self.apply_button = customtkinter.CTkButton(self.button_frame, text="Apply", command=self.apply)
+        self.apply_button = customtkinter.CTkButton(
+            self.button_frame, text="Apply", command=self.apply
+        )
         self.apply_button.pack(side="left", padx=5)
 
     def apply(self):
