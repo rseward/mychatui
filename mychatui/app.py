@@ -280,6 +280,31 @@ class App(customtkinter.CTk):
             logger.error(traceback.format_exc())
             raise
 
+    def clear_current_tab_history(self):
+        logger.info("Clearing current tab history...")
+        try:
+            current_tab_name = self.tab_view.get()
+            tab = self.tab_view.tab(current_tab_name)
+            tab.chat_history = []
+            self.update_textbox_html(tab, tab.winfo_children()[0])
+            logger.info("Tab history cleared successfully")
+        except Exception as e:
+            logger.error(f"Error clearing tab history: {str(e)}")
+            logger.error(traceback.format_exc())
+            raise
+
+    def refresh_current_tab_history(self):
+        logger.info("Refreshing current tab history...")
+        try:
+            current_tab_name = self.tab_view.get()
+            tab = self.tab_view.tab(current_tab_name)
+            self.update_textbox_html(tab, tab.winfo_children()[0])
+            logger.info("Tab history refreshed successfully")
+        except Exception as e:
+            logger.error(f"Error refreshing tab history: {str(e)}")
+            logger.error(traceback.format_exc())
+            raise
+
     def close_current_tab(self):
         logger.info("Closing current tab...")
         try:
@@ -312,10 +337,30 @@ class App(customtkinter.CTk):
             with open(file_path, "w") as f:
                 json.dump(tab_data, f, indent=4)
             logger.info(f"Tab saved successfully to {file_path}")
+            self.show_transient_message(f"Tab '{current_tab_name}' saved successfully.")
         except Exception as e:
             logger.error(f"Error saving tab: {str(e)}")
             logger.error(traceback.format_exc())
-            raise
+            self.show_transient_message(f"Error saving tab: {e}", is_error=True)
+
+    def show_transient_message(self, message, is_error=False):
+        """Displays a transient message label that fades out."""
+        if is_error:
+            fg_color = ("#ffcccc", "#990000")  # Light red, Dark red
+            text_color = ("#990000", "#ffcccc")
+        else:
+            fg_color = ("#ccffcc", "#006600")  # Light green, Dark green
+            text_color = ("#006600", "#ccffcc")
+
+        label = customtkinter.CTkLabel(
+            self,
+            text=message,
+            fg_color=fg_color,
+            text_color=text_color,
+            corner_radius=5,
+        )
+        label.place(relx=0.5, rely=0.05, anchor="center")
+        self.after(5000, label.destroy)
 
     def open_tab(self):
         logger.info("Opening tab...")
@@ -331,9 +376,14 @@ class App(customtkinter.CTk):
                     tab_data = json.load(f)
 
                 tab_name = tab_data.get("tab_name", "New Tab")
-                self.add_new_tab(tab_name)
 
-                tab = self.tab_view.tab(tab_name)
+                # Check if tab already exists
+                if tab_name in self.tab_view._name_list:
+                    tab = self.tab_view.tab(tab_name)
+                else:
+                    self.add_new_tab(tab_name)
+                    tab = self.tab_view.tab(tab_name)
+
                 tab.model = tab_data.get("model_name")
                 tab.chat_history = tab_data.get("chat_history", [])
 
@@ -354,6 +404,7 @@ class App(customtkinter.CTk):
             tab.grid_columnconfigure(1, weight=0)
 
             tab.chat_history = []
+            tab.history_index = None
 
             font = (None, self.font_size)
 
@@ -371,6 +422,8 @@ class App(customtkinter.CTk):
             )
             entry.grid(row=1, column=0, sticky="ew", padx=(5, 0), pady=5)
             entry.bind("<Return>", lambda event: self.send_message(tab, textbox, entry))
+            entry.bind("<Up>", lambda event: self.navigate_history(tab, entry, -1))
+            entry.bind("<Down>", lambda event: self.navigate_history(tab, entry, 1))
 
             send_button = customtkinter.CTkButton(
                 tab,
@@ -426,6 +479,39 @@ class App(customtkinter.CTk):
             logger.error(f"Error copying selection: {str(e)}")
             logger.error(traceback.format_exc())
             raise
+
+    def navigate_history(self, tab, entry, direction):
+        user_messages = [msg["content"] for msg in tab.chat_history if msg["role"] == "user"]
+        if not user_messages:
+            self.flash_widget(entry)
+            return
+
+        if tab.history_index is None:
+            tab.history_index = len(user_messages)
+
+        tab.history_index += direction
+
+        if tab.history_index < 0:
+            tab.history_index = 0
+            self.flash_widget(entry)
+        elif tab.history_index >= len(user_messages):
+            tab.history_index = len(user_messages)
+            entry.delete(0, "end")
+            self.flash_widget(entry)
+            return
+
+        if 0 <= tab.history_index < len(user_messages):
+            message_html = user_messages[tab.history_index]
+            soup = BeautifulSoup(message_html, "html.parser")
+            message_text = soup.get_text().replace("🧑 You: ", "")
+            entry.delete(0, "end")
+            entry.insert(0, message_text)
+
+    def flash_widget(self, widget):
+        original_color = widget.cget("fg_color")
+        flash_color = "#ff0000"
+        widget.configure(fg_color=flash_color)
+        self.after(100, lambda: widget.configure(fg_color=original_color))
 
     def send_message(self, tab, textbox, entry):
         logger.info("Sending message...")
@@ -628,6 +714,8 @@ class App(customtkinter.CTk):
             self.bind("<Control-q>", lambda event: self.destroy())
             self.bind("<Control-s>", lambda event: self.save_current_tab())
             self.bind("<Control-o>", lambda event: self.open_tab())
+            self.bind("<Control-l>", lambda event: self.refresh_current_tab_history())
+            self.bind("<Control-Shift-H>", lambda event: self.clear_current_tab_history())
             logger.info("Shortcuts bound successfully")
         except Exception as e:
             logger.error(f"Error binding shortcuts: {str(e)}")

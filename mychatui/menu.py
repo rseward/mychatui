@@ -32,6 +32,12 @@ class HamburgerMenu(customtkinter.CTkFrame):
             label="Open Tab", accelerator="Ctrl+O", command=self.app.open_tab
         )
         self.menu.add_separator()
+        self.menu.add_command(
+            label="Clear History",
+            accelerator="Ctrl+Alt+X",
+            command=self.app.clear_current_tab_history,
+        )
+        self.menu.add_separator()
         self.menu.add_command(label="Preferences", command=self.app.open_preferences)
         self.menu.add_separator()
         self.menu.add_command(

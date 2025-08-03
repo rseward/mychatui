@@ -132,7 +132,10 @@ class TestApp(unittest.TestCase):
         self.app.tab_view.get.return_value = "Test Tab"
         tab = MagicMock()
         tab.model = "test_model"
-        tab.chat_history = ["message1", "message2"]
+        tab.chat_history = [
+            {"role": "user", "content": "message1"},
+            {"role": "assistant", "content": "message2"},
+        ]
         self.app.tab_view.tab.return_value = tab
         mock_open = unittest.mock.mock_open()
         with patch("builtins.open", mock_open):
@@ -150,7 +153,10 @@ class TestApp(unittest.TestCase):
                 {
                     "tab_name": "Test Tab",
                     "model_name": "test_model",
-                    "chat_history": ["message1", "message2"],
+                    "chat_history": [
+                        {"role": "user", "content": "message1"},
+                        {"role": "assistant", "content": "message2"},
+                    ],
                 },
             )
 
@@ -159,7 +165,10 @@ class TestApp(unittest.TestCase):
         tab_data = {
             "tab_name": "Test Tab",
             "model_name": "test_model",
-            "chat_history": ["message1", "message2"],
+            "chat_history": [
+                {"role": "user", "content": "message1"},
+                {"role": "assistant", "content": "message2"},
+            ],
         }
         with patch("tkinter.filedialog.askopenfilename", return_value="test_file.json"):
             with patch(
@@ -176,7 +185,13 @@ class TestApp(unittest.TestCase):
                 # Then
                 self.app.tab_view.add.assert_called_once_with("Test Tab")
                 self.assertEqual(tab.model, "test_model")
-                self.assertEqual(tab.chat_history, ["message1", "message2"])
+                self.assertEqual(
+                    tab.chat_history,
+                    [
+                        {"role": "user", "content": "message1"},
+                        {"role": "assistant", "content": "message2"},
+                    ],
+                )
                 self.app.menu_frame.update_model_menu.assert_called_once()
 
 
