@@ -23,7 +23,7 @@
 - [x] Add a Ctrl-q shortcut to quit the application
 - [x] Add a Ctrl-s shortcut to save the current tab and it's chat history
 - [x] Add a Ctrl-o shortcut to open a saved tab
-- [x] Add a hamburger menu item to clear the chat history for the current tab. Also add a keyboard shortcut to clear the chat history for the current tab: Ctrl-Alt-x
+- [x] Add a hamburger menu item to clear the chat history for the current tab. Also add a keyboard shortcut to clear the chat history for the current tab: Ctrl-Shift-h
 
 ## Tab Management
 
