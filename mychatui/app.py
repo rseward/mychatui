@@ -69,6 +69,7 @@ class App(customtkinter.CTk):
             # Set window properties
             self.title("MyChatUI")
             self.geometry("700x500")
+            customtkinter.set_appearance_mode("dark") 
             
             # Set window class and name for proper desktop integration
             try:
@@ -79,7 +80,6 @@ class App(customtkinter.CTk):
                 # Method 3: Set both class and name
                 self.tk.call('wm', 'command', self._w, 'MyChatUI')
                 logger.info("Set window class and name to 'MyChatUI'")
-                customtkinter.set_appearance_mode("Dark") 
                 
             except Exception as e:
                 logger.error(f"Failed to set window class/name: {e}")
