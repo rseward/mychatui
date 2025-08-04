@@ -13,6 +13,13 @@ install:
 	#.venv/bin/python setup.py sdist bdist_wheel
 	.venv/bin/python -m pip install .
 
+lint:
+	cd mychatui; ruff check
+	cd mychatui; ruff format
+
+test:
+	.venv/bin/python -m pytest tests
+
 desktop:
 	# Create necessary directories
 	mkdir -p ~/.local/share/icons/hicolor/128x128/apps/
