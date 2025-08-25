@@ -43,4 +43,29 @@ class AiSuiteAdapter:
             "role": role,
             "content": response_text,
         }
+
+
+    def completion(self, model, messages, base_url=None):
+        client = ai.Client()
+
+        base_url = None
+        if "openai" in model:
+            base_url = os.getenv("OPENAI_API_URL")
+
+        response = None
+        if base_url is not None:
+            response = client.chat.completions.create(
+                model=model, messages=messages, base_url=base_url
+            )
+        else:
+            response = client.chat.completions.create(
+                model=model, messages=messages
+                )
+
+        if response is not None:
+            response = self.aisuite_adapter.getResponse(response)
+
+        return response
+
+        
         

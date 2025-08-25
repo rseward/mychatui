@@ -4,4 +4,5 @@ tkhtmlview
 markdown-it-py
 mdit-py-plugins
 ruff
+any-llm-sdk[google,ollama,openai]
 
