@@ -10,9 +10,9 @@ import traceback
 from datetime import datetime
 # import google.generativeai as genai
 
-import aisuite as ai
+import any_llm as ai
 from mychatui.adapters.aisuite import AiSuiteAdapter
-
+from mychatui.adapters.anyllm import AnyLlmAdapter
 
 # Set up basic logging
 log_file = os.path.expanduser("~/mychatui_debug.log")
@@ -143,6 +143,7 @@ class App(customtkinter.CTk):
             # Initialize UI components
             self.init_ui()
             self.aisuite_adapter = AiSuiteAdapter()
+            self.anyllm_adapter = AnyLlmAdapter()
             logger.info("UI initialization complete")
 
         except Exception as e:
@@ -552,11 +553,24 @@ class App(customtkinter.CTk):
     def _get_ai_response_threaded(self, tab, textbox, message, model):
         logger.info("Getting AI response...")
         try:
-            chat_history = self.aisuite_adapter.getChatHistory(
-                self._get_chat_history(tab)
-            )
+            anyllm = True
+            chat_history = None
+            ui_chat_history = self._get_chat_history(tab)
+            if anyllm:
+                chat_history = self.anyllm_adapter.getChatHistory(
+                    ui_chat_history
+                )
+                # TODO: use anyllm adapter
+                response = self.anyllm_adapter.completion(model, chat_history)
+            else:
+                # aisuite adapter
+                chat_history = self.aisuite_adapter.getChatHistory(
+                    ui_chat_history
+                )
+                response = self.aisuite_adapter.completion(model, chat_history)
             #chat_history.append({"role": "user", "content": message})
 
+            '''
             client = ai.Client()
 
             base_url = None
@@ -575,6 +589,7 @@ class App(customtkinter.CTk):
 
             if response is not None:
                 response = self.aisuite_adapter.getResponse(response)
+            '''
 
             self.after(0, self.get_ai_response, tab, textbox, response["content"], None)
             logger.info("AI response received successfully")
