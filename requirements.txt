@@ -1,3 +1,4 @@
+Pillow>=12.0.0
 customtkinter
 google-generativeai
 tkhtmlview
@@ -5,4 +6,4 @@ markdown-it-py
 mdit-py-plugins
 ruff
 any-llm-sdk[google,ollama,openai]
-
+bs4
