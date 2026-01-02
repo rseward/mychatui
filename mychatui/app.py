@@ -48,6 +48,7 @@ try:
 
     from mychatui.preferences import PreferencesWindow
     from mychatui.menu import HamburgerMenu
+    from mychatui.voice_input import VoiceInput
     import json
     import threading
     from markdown_it import MarkdownIt
@@ -76,7 +77,7 @@ class App(customtkinter.CTk):
             # Set window properties
             self.title("MyChatUI")
             self.geometry("700x500")
-            customtkinter.set_appearance_mode("dark") 
+            customtkinter.set_appearance_mode("dark")
 
             # Set window class and name for proper desktop integration
             try:
@@ -404,6 +405,7 @@ class App(customtkinter.CTk):
             tab.grid_rowconfigure(1, weight=0)
             tab.grid_columnconfigure(0, weight=1)
             tab.grid_columnconfigure(1, weight=0)
+            tab.grid_columnconfigure(2, weight=0)
 
             tab.chat_history = []
             tab.history_index = None
@@ -411,7 +413,7 @@ class App(customtkinter.CTk):
             font = (None, self.font_size)
 
             textbox = HTMLScrolledText(tab, font=font)
-            textbox.grid(row=0, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
+            textbox.grid(row=0, column=0, columnspan=3, sticky="nsew", padx=5, pady=5)
 
             darkback = "#002b36"
             if customtkinter.get_appearance_mode() == "Dark":
@@ -427,13 +429,33 @@ class App(customtkinter.CTk):
             entry.bind("<Up>", lambda event: self.navigate_history(tab, entry, -1))
             entry.bind("<Down>", lambda event: self.navigate_history(tab, entry, 1))
 
+            # 1. Load the image
+            from PIL import Image
+            mic_image = customtkinter.CTkImage(
+                light_image=Image.open("/usr/share/icons/HighContrast/24x24/devices/audio-input-microphone.png"),
+                dark_image=Image.open("/usr/share/icons/HighContrast/24x24/devices/audio-input-microphone.png"),
+                size=(24, 24)
+            )
+
+            # Microphone button for voice input
+            mic = "\N{MICROPHONE}"
+            mic_button = customtkinter.CTkButton(
+                tab,
+                text="",
+                image=mic_image,
+                width=50,
+                command=lambda: self.open_voice_input(tab, entry),
+                font=("Segoe UI Emoji", 18), # Font with emoji support
+            )
+            mic_button.grid(row=1, column=1, sticky="e", padx=5, pady=5)
+
             send_button = customtkinter.CTkButton(
                 tab,
                 text="Send",
                 width=70,
                 command=lambda: self.send_message(tab, textbox, entry),
             )
-            send_button.grid(row=1, column=1, sticky="e", padx=5, pady=5)
+            send_button.grid(row=1, column=2, sticky="e", padx=5, pady=5)
             logger.info("Chat widgets created successfully")
         except Exception as e:
             logger.error(f"Error creating chat widgets: {str(e)}")
@@ -698,6 +720,28 @@ class App(customtkinter.CTk):
             logger.error(f"Error opening preferences: {str(e)}")
             logger.error(traceback.format_exc())
             raise
+
+    def open_voice_input(self, tab, entry):
+        """Start voice input recording using external listen command."""
+        logger.info("Starting voice input...")
+        try:
+            def on_transcription_complete(transcribed_text):
+                """Callback when transcription is complete."""
+                logger.info(f"Voice transcription complete: {transcribed_text}")
+                # Insert transcribed text into the entry box
+                self.after(0, lambda: entry.delete(0, "end"))
+                self.after(0, lambda: entry.insert(0, transcribed_text))
+                # Focus the entry box for user review
+                self.after(0, lambda: entry.focus_set())
+
+            # Start voice input (this will open the listen command's UI window)
+            voice_input = VoiceInput(on_complete=on_transcription_complete)
+            voice_input.start_recording()
+            logger.info("Voice input started successfully")
+        except Exception as e:
+            logger.error(f"Error starting voice input: {str(e)}")
+            logger.error(traceback.format_exc())
+            self.show_transient_message(f"Voice input error: {e}", is_error=True)
 
     def apply_font_change(self):
         logger.info("Applying font change...")

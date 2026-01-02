@@ -7,3 +7,4 @@ mdit-py-plugins
 ruff
 any-llm-sdk[google,ollama,openai]
 bs4
+pytest

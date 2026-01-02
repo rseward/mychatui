@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.2.0
+
+- Integrated voice_input capability using the listen project at /bluestone/src/github/rtd/listen
+
 ## v0.1.0
 
 - Initial release
