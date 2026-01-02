@@ -8,7 +8,7 @@ echo "$(date): Jarvis coming online.." >> ~/logs/mychatui.log
 source /bluestone/src/github/mychatui/.venv/bin/activate
 
 # Run the application with full error output
-cd /home/bluestone/src/github/mychatui
+cd /bluestone/src/github/mychatui
 python -m mychatui.app
 
 # Keep the terminal open if there's an error

@@ -76,6 +76,7 @@ class App(customtkinter.CTk):
             # Set window properties
             self.title("MyChatUI")
             self.geometry("700x500")
+            customtkinter.set_appearance_mode("dark") 
 
             # Set window class and name for proper desktop integration
             try:
